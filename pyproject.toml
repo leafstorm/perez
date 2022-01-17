@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "perez"
+version = "0.1.0"
+description = "A Web-based client for Gemini and Titan"
+authors = ["Matthew Frazier <matthew@teamfrazier.org>"]
+license = "BSD-3-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+aiohttp = "^3.8.1"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+perez-proxy = 'perez.web:main'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
