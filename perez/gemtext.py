@@ -1,3 +1,11 @@
+"""
+perez.gemtext
+=============
+This implements the Gemtext parser and corresponding HTML generator.
+
+:copyright: (C) 2022 Matthew Frazier
+:license:   Revised BSD license, see LICENSE file for legal text
+"""
 import enum
 import html
 import re

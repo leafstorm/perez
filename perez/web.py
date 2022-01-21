@@ -1,3 +1,11 @@
+"""
+perez.web
+=========
+This implements the Gemini proxy as a Web application.
+
+:copyright: (C) 2022 Matthew Frazier
+:license:   Revised BSD license, see LICENSE file for legal text
+"""
 import os.path
 import traceback
 from aiohttp import web

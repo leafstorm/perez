@@ -1,3 +1,11 @@
+"""
+perez.gemini
+============
+This implements an asynchronous Gemini client.
+
+:copyright: (C) 2022 Matthew Frazier
+:license:   Revised BSD license, see LICENSE file for legal text
+"""
 import asyncio
 import re
 import ssl
