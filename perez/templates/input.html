@@ -1,0 +1,31 @@
+{#
+input.html
+==========
+Template for input prompts.
+
+:copyright: (C) 2022 Matthew Frazier
+:license:   Revised BSD license, see LICENSE file for legal text
+#}<!doctype html>
+<html>
+    <head>
+        <title>{{ host }}</title>
+        {# <link rel="stylesheet" href="/__static__/gemtext.css"> #}
+    </head>
+    <body>
+        <header>
+            <h1>{{ host }}</h1>
+        </header>
+        <main>
+            <form action="" method="GET">
+                <p>
+                    <label for="input">{{ message }}</label><br>
+                    <input id="input" type="text" name="q">
+                </p>
+            </form>
+        </main>
+        <footer>
+            <p>Powered by <a href="https://github.com/leafstorm/perez">Perez</a></p>
+        </footer>
+        <script src="/__static__/gemini_link_rewrite.js"></script>
+    </body>
+</html>

@@ -9,8 +9,11 @@ This implements the Gemini proxy as a Web application.
 import os.path
 import traceback
 from aiohttp import web
+from aiohttp_jinja2 import render_template, setup as setup_jinja2
 from cgi import parse_header
-from .gemini import gemini_request, STATUS_SUCCESS
+from jinja2 import PackageLoader
+from markupsafe import Markup
+from .gemini import gemini_request, STATUS_SUCCESS, STATUS_INPUT, STATUS_REDIRECT
 from .gemtext import gemtext_to_html
 
 HOST_RE = r'[a-z0-9-]+(?:\.[a-z0-9-]+)*'
@@ -59,22 +62,39 @@ async def gemini_handler(request: web.Request):
             charset = 'UTF-8'
 
         if mimetype == 'text/gemini':
-            # TODO: Convert gemtext to HTML.
-            # For now, we're going to display it as text/plain.
             gemtext = response.body.decode(charset)
-            html = gemtext_to_html(gemtext)
-            body = html.encode('UTF-8')
-            mimetype = 'text/html'
-            charset = 'UTF-8'
+            html = Markup(gemtext_to_html(gemtext))
+            return render_template('gemtext.html', request, {
+                'host':     host,
+                'html':     html,
+                'gemtext':  gemtext
+            })
         else:
             body = response.body
-        return web.Response(body=body, content_type=mimetype, charset=charset)
+            return web.Response(body=body, content_type=mimetype, charset=charset)
+    elif response.status_type == STATUS_REDIRECT:
+        return render_template('redirect.html', request, {
+            'host':         host,
+            'status_code':  response.status_code,
+            'url':          response.header
+        })
+    elif response.status_type == STATUS_INPUT:
+        return render_template('input.html', request, {
+            'host':         host,
+            'status_code':  response.status_code,
+            'message':      response.header or "Enter your query"
+        })
     else:
-        return web.Response(text=f'{response.status_code}: {response.header}')
+        return render_template('error.html', request, {
+            'host':         host,
+            'status_code':  response.status_code,
+            'message':  response.header
+        })
 
 
 def create_app():
     app = web.Application()
+    setup_jinja2(app, loader=PackageLoader('perez', 'templates'))
     app.add_routes([
         web.static('/__static__', STATIC_FOLDER),
         web.get('/', index_handler, name='index'),

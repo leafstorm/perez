@@ -132,13 +132,8 @@ def build_html(parsed_lines, proxy_hostname=None):
             raise NotImplementedError()
 
 
-def gemtext_to_html_lines(gemtext):
-    return '\n'.join(build_html(iter_gemtext(gemtext)))
-
-
 def gemtext_to_html(gemtext):
-    core = gemtext_to_html_lines(gemtext)
-    return HTML_HEADER + core + HTML_FOOTER
+    return '\n'.join(build_html(iter_gemtext(gemtext)))
 
 
 HTML_HEADER = '''<!doctype html>

@@ -1,0 +1,28 @@
+{#
+redirect.html
+=============
+Template for non-automatic redirects.
+
+:copyright: (C) 2022 Matthew Frazier
+:license:   Revised BSD license, see LICENSE file for legal text
+#}<!doctype html>
+<html>
+    <head>
+        <title>{{ host }}</title>
+        {# <link rel="stylesheet" href="/__static__/gemtext.css"> #}
+    </head>
+    <body>
+        <header>
+            <h1>{{ host }}</h1>
+        </header>
+        <main>
+            <p>The page would like to redirect you to:</p>
+            <p><a href="{{ url }}">{{ url }}</a></p>
+            <p>(status code {{ status_code }})</p>
+        </main>
+        <footer>
+            <p>Powered by <a href="https://github.com/leafstorm/perez">Perez</a></p>
+        </footer>
+        <script src="/__static__/gemini_link_rewrite.js"></script>
+    </body>
+</html>

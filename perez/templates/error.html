@@ -1,0 +1,26 @@
+{#
+error.html
+==========
+Template for error messages, or other problems.
+
+:copyright: (C) 2022 Matthew Frazier
+:license:   Revised BSD license, see LICENSE file for legal text
+#}<!doctype html>
+<html>
+    <head>
+        <title>{{ host }}</title>
+        {# <link rel="stylesheet" href="/__static__/gemtext.css"> #}
+    </head>
+    <body>
+        <header>
+            <h1>{{ host }}</h1>
+        </header>
+        <main>
+            <p>Error{% if status_code %} {{ status_code }}{% endif %}: {{ message }}</p>
+        </main>
+        <footer>
+            <p>Powered by <a href="https://github.com/leafstorm/perez">Perez</a></p>
+        </footer>
+        <script src="/__static__/gemini_link_rewrite.js"></script>
+    </body>
+</html>
