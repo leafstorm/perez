@@ -8,6 +8,7 @@ This implements the Gemini proxy as a Web application.
 """
 import os.path
 import traceback
+import urllib.parse
 from aiohttp import web
 from aiohttp_jinja2 import render_template, setup as setup_jinja2
 from cgi import parse_header
@@ -76,6 +77,18 @@ async def gemini_handler(request: web.Request):
             body = response.body
             return web.Response(body=body, content_type=mimetype, charset=charset)
     elif response.status_type == STATUS_REDIRECT:
+        target = urllib.parse.urlparse(response.header)
+        target_host = (target.scheme, target.netloc)
+        if target_host == ('', '') or target_host == ('gemini', host):
+            target_path = urllib.parse.urljoin(path, target.path)
+            reversed = request.app.router['gemini'].url_for(host=host, path=target_path)
+            if '?' in response.header:
+                # We check manually since the ParseResult does not distinguish
+                # between no query (/cgi) and an empty query (/cgi?), but some
+                # Gemini servers do.
+                reversed = reversed.with_query({'q': target.query})
+            return web.HTTPFound(location=reversed)
+
         return render_template('redirect.html', request, {
             'host':         host,
             'status_code':  response.status_code,
