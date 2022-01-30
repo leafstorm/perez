@@ -134,21 +134,3 @@ def build_html(parsed_lines, proxy_hostname=None):
 
 def gemtext_to_html(gemtext):
     return '\n'.join(build_html(iter_gemtext(gemtext)))
-
-
-HTML_HEADER = '''<!doctype html>
-<html>
-    <head>
-        <title>Gemini</title>
-        <link rel="stylesheet" href="/__static__/gemtext.css">
-    </head>
-    <body>
-        <main class="gemtext">
-'''
-
-HTML_FOOTER = '''
-        </main>
-    </body>
-    <script src="/__static__/gemini_link_rewrite.js"></script>
-</html>
-'''
