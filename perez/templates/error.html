@@ -16,7 +16,14 @@ Template for error messages, or other problems.
             <h1>{{ host }}</h1>
         </header>
         <main>
-            <p>Error{% if status_code %} {{ status_code }}{% endif %}: {{ message }}</p>
+            <p>
+                {% if status_code %}
+                    Error {{ status_code }}:
+                {% else %}
+                    Connection error:
+                {% endif %}
+                {{ message }}
+            </p>
         </main>
         <footer>
             <p>Powered by <a href="https://github.com/leafstorm/perez">Perez</a></p>

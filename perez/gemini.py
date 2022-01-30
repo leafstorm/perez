@@ -8,6 +8,7 @@ This implements an asynchronous Gemini client.
 """
 import asyncio
 import re
+import socket
 import ssl
 import sys
 
@@ -72,6 +73,10 @@ class GeminiResponse(object):
         self.body = body
 
 
+class GeminiProtocolError(OSError):
+    pass
+
+
 @asyncio.coroutine
 async def gemini_request(host, path, *, port=1965, query=None, client_cert=None) -> GeminiResponse:
     # Validate URL.
@@ -79,46 +84,60 @@ async def gemini_request(host, path, *, port=1965, query=None, client_cert=None)
     # Servers will of course stop us from doing particularly stupid things,
     # but we should still be nice to them...
     if not isinstance(port, int) or port < 1 or port > 65535:
-        raise TypeError("Invalid port number provided")
+        raise GeminiProtocolError(f"Invalid port number {port} provided")
+    if path[0] != '/':
+        raise GeminiProtocolError("Path must begin with /")
     port_string = '' if port == 1965 else f':{port}'
     gemini_url = 'gemini://' + host + port_string + path
     if query is not None:
         gemini_url = gemini_url + '?' + query
     url_encoded = gemini_url.encode('utf8') + b'\r\n'
     if len(url_encoded) > 1026:
-        raise ValueError("Gemini URL is too long (1024-byte limit)")
+        raise GeminiProtocolError(f"Gemini URL is too long ({len(url_encoded)} bytes; limit is 1024)")
 
-    ssl = client_ssl_context(client_cert)
-    reader, writer = await asyncio.open_connection(host, port, ssl=ssl)
-
+    ssl_context = client_ssl_context(client_cert)
     try:
-        # TODO: We can validate the certificate at this point.
-        # Transmit the URL...
-        writer.write(url_encoded)
-        await writer.drain()
+        reader, writer = await asyncio.open_connection(host, port, ssl=ssl_context)
 
-        # Wait for a response...
-        header_line_enc = await reader.readuntil(b'\n')
-        if len(header_line_enc) > HEADER_LINE_SIZE:
-            raise ValueError(f"Server sent a {len(header_line_enc)}-byte header line")
-        header_line = header_line_enc.decode('utf8', errors='replace')
-        m = HEADER_RE.match(header_line)
-        if m is None:
-            raise ValueError("Server sent an improperly formatted header line")
+        try:
+            # TODO: We can validate the certificate at this point.
+            # Transmit the URL...
+            writer.write(url_encoded)
+            await writer.drain()
 
-        status_code = int(header_line[:2])
-        header = header_line[3:-2]
+            # Wait for a response...
+            header_line_enc = await reader.readuntil(b'\n')
+            if len(header_line_enc) > HEADER_LINE_SIZE:
+                raise GeminiProtocolError(f"Server sent a {len(header_line_enc)}-byte header line")
+            header_line = header_line_enc.decode('utf8', errors='replace')
+            m = HEADER_RE.match(header_line)
+            if m is None:
+                raise GeminiProtocolError("Server sent an improperly formatted header line")
 
-        if status_code >= 20 and status_code < 30:
-            # We have a response body.
-            body = await reader.read(TEMPORARY_RESPONSE_SIZE_LIMIT)
-            while not reader.at_eof() and len(body) < TEMPORARY_RESPONSE_SIZE_LIMIT:
-                size = TEMPORARY_RESPONSE_SIZE_LIMIT - len(body)
-                body = body + await reader.read(size)
-        else:
-            body = None
+            status_code = int(header_line[:2])
+            header = header_line[3:-2]
 
-        return GeminiResponse(gemini_url, status_code, header, body)
-    finally:
-        writer.close()
-        await writer.wait_closed()
+            if status_code >= 20 and status_code < 30:
+                # We have a response body.
+                body = await reader.read(TEMPORARY_RESPONSE_SIZE_LIMIT)
+                while not reader.at_eof() and len(body) < TEMPORARY_RESPONSE_SIZE_LIMIT:
+                    size = TEMPORARY_RESPONSE_SIZE_LIMIT - len(body)
+                    body = body + await reader.read(size)
+            else:
+                body = None
+
+            return GeminiResponse(gemini_url, status_code, header, body)
+        finally:
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except ssl.SSLError as exc:
+                # Ignore exceptions caused by us closing the connection before
+                # we have read all the data.
+                if 'application data after close notify' not in str(exc):
+                    raise
+    
+    except socket.gaierror as exc:
+        raise GeminiProtocolError(f"Could not resolve host {host}")
+    except OSError as exc:
+        raise GeminiProtocolError(str(exc)) from exc

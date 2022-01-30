@@ -13,7 +13,7 @@ from aiohttp_jinja2 import render_template, setup as setup_jinja2
 from cgi import parse_header
 from jinja2 import PackageLoader
 from markupsafe import Markup
-from .gemini import gemini_request, STATUS_SUCCESS, STATUS_INPUT, STATUS_REDIRECT
+from .gemini import GeminiProtocolError, gemini_request, STATUS_SUCCESS, STATUS_INPUT, STATUS_REDIRECT
 from .gemtext import gemtext_to_html
 
 HOST_RE = r'[a-z0-9-]+(?:\.[a-z0-9-]+)*'
@@ -47,9 +47,12 @@ async def gemini_handler(request: web.Request):
 
     try:
         response = await gemini_request(host, path, query=query)
-    except Exception as e:
-        tb = traceback.format_exc()
-        raise web.HTTPBadGateway(text=tb)
+    except GeminiProtocolError as exc:
+        return render_template('error.html', request, {
+            'host':         host,
+            'status_code':  None,
+            'message':      str(exc)
+        })
 
     if response.status_type == STATUS_SUCCESS:
         # Process the MIME type.
@@ -88,7 +91,7 @@ async def gemini_handler(request: web.Request):
         return render_template('error.html', request, {
             'host':         host,
             'status_code':  response.status_code,
-            'message':  response.header
+            'message':      response.header
         })
 
 
